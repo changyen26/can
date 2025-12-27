@@ -29,7 +29,9 @@ if app.config['SQLALCHEMY_DATABASE_URI'].startswith('postgres://'):
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 API_KEY = os.getenv('API_KEY', 'dev-secret-key')
-CORS_ORIGINS = os.getenv('CORS_ORIGINS', '*').split(',')
+# CORS origins - allow all if not specified
+cors_env = os.getenv('CORS_ORIGINS', '*')
+CORS_ORIGINS = cors_env.split(',') if cors_env != '*' else '*'
 OFFLINE_THRESHOLD_SECONDS = int(os.getenv('OFFLINE_THRESHOLD_SECONDS', '300'))
 
 logger.info(f"Starting Windmill Monitor API")
