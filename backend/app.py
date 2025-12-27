@@ -1,18 +1,14 @@
-# Eventlet monkey patching - MUST be first
-import eventlet
-eventlet.monkey_patch()
-
 import os
 import json
 import time
 import logging
 import random
+import threading
+from queue import Queue, Empty, Full
 from datetime import datetime, timedelta
 from flask import Flask, request, jsonify, Response, send_from_directory
 from flask_cors import CORS
 from functools import wraps
-from eventlet.queue import Queue, Empty
-from eventlet import spawn
 from models import db, DeviceData
 
 # Configure logging
@@ -84,7 +80,7 @@ def broadcast_to_device_clients(device_id, data):
             for client_queue in sse_clients[device_id]:
                 try:
                     client_queue.put_nowait(data)
-                except queue.Full:
+                except Full:
                     pass
 
 

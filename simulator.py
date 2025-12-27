@@ -22,7 +22,7 @@ API_KEY = "dev-secret-key"
 DEVICE_ID = "esp32-001"
 
 # 發送間隔（秒）
-INTERVAL = 1
+INTERVAL = 0.5
 
 # ========== 數據生成函數 ==========
 
