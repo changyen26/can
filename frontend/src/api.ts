@@ -1,6 +1,9 @@
 import { Device, DeviceData, HistoryDataPoint } from './types';
 
-const API_BASE = '/api/v1';
+// 使用環境變數設定 API 基礎 URL
+// 開發環境：使用 Vite proxy (本地)
+// 生產環境：使用 Zeabur 後端 URL
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api/v1';
 
 export const api = {
   async getDevices(): Promise<Device[]> {
