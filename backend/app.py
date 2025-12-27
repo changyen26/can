@@ -44,8 +44,17 @@ logger.info(f"CORS Origins: {CORS_ORIGINS}")
 # Initialize database
 db.init_app(app)
 
-# CORS configuration
-CORS(app, resources={r"/api/*": {"origins": CORS_ORIGINS}})
+# CORS configuration - Allow all origins and methods for API
+CORS(app, resources={
+    r"/api/*": {
+        "origins": CORS_ORIGINS,
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type", "x-api-key"],
+        "expose_headers": ["Content-Type"],
+        "supports_credentials": False,
+        "max_age": 3600
+    }
+})
 
 # Create tables on startup
 with app.app_context():
