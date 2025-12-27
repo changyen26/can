@@ -116,7 +116,7 @@ def ingest():
         # Create device data entry
         device_data = DeviceData(
             device_id=data['device_id'],
-            timestamp=datetime.fromtimestamp(data['ts'] / 1000.0),
+            timestamp=datetime.utcfromtimestamp(data['ts'] / 1000.0),  # Use UTC
             voltage_v=voltage,
             current_a=current,
             power_w=power,
@@ -284,11 +284,11 @@ def get_history():
         query = DeviceData.query.filter_by(device_id=device_id)
 
         if from_ts:
-            from_dt = datetime.fromtimestamp(int(from_ts) / 1000.0)
+            from_dt = datetime.utcfromtimestamp(int(from_ts) / 1000.0)  # Use UTC
             query = query.filter(DeviceData.timestamp >= from_dt)
 
         if to_ts:
-            to_dt = datetime.fromtimestamp(int(to_ts) / 1000.0)
+            to_dt = datetime.utcfromtimestamp(int(to_ts) / 1000.0)  # Use UTC
             query = query.filter(DeviceData.timestamp <= to_dt)
 
         results = query.order_by(DeviceData.timestamp.desc()).limit(limit).all()
@@ -349,11 +349,17 @@ def simulate_data():
         for i in range(count):
             timestamp = now - timedelta(minutes=count - i)
 
+            # Generate sensor data
+            voltage = round(12 + random.uniform(-1, 1), 2)
+            current = round(1.2 + random.uniform(-0.2, 0.3), 2)
+            power = voltage * current  # Calculate power
+
             device_data = DeviceData(
                 device_id=device_id,
                 timestamp=timestamp,
-                voltage_v=round(12 + random.uniform(-1, 1), 2),
-                current_a=round(1.2 + random.uniform(-0.2, 0.3), 2),
+                voltage_v=voltage,
+                current_a=current,
+                power_w=power,
                 rpm=int(3400 + random.uniform(-200, 300)),
                 pressure_hpa=round(1013 + random.uniform(-5, 5), 2),
                 temp_c=round(25 + random.uniform(-3, 3), 1),
