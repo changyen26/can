@@ -1,3 +1,7 @@
+# Gevent monkey patching - MUST be first for production
+from gevent import monkey
+monkey.patch_all()
+
 import os
 import json
 import time
