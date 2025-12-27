@@ -156,6 +156,7 @@ function App() {
             offline: false,
             voltage_v: data.voltage_v,
             current_a: data.current_a,
+            power_w: data.power_w,
             rpm: data.rpm,
             pressure_hpa: data.pressure_hpa,
             temp_c: data.temp_c,
@@ -172,6 +173,7 @@ function App() {
               ts: new Date(data.timestamp).getTime(),
               voltage_v: data.voltage_v,
               current_a: data.current_a,
+              power_w: data.power_w,
               rpm: data.rpm,
               pressure_hpa: data.pressure_hpa,
               temp_c: data.temp_c,
@@ -370,6 +372,7 @@ function App() {
 
       <div className="metrics-grid">
         <PowerCard
+          power={getValue('power_w')}
           voltage={getValue('voltage_v')}
           current={getValue('current_a')}
         />

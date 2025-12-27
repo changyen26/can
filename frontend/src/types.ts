@@ -5,6 +5,7 @@ export interface DeviceData {
   data?: {
     voltage_v: number | null;
     current_a: number | null;
+    power_w: number | null;
     rpm: number | null;
     pressure_hpa: number | null;
     temp_c: number | null;
@@ -13,6 +14,7 @@ export interface DeviceData {
   };
   voltage_v?: number | null;
   current_a?: number | null;
+  power_w?: number | null;
   rpm?: number | null;
   pressure_hpa?: number | null;
   temp_c?: number | null;
@@ -31,6 +33,7 @@ export interface HistoryDataPoint {
   ts: number;
   voltage_v?: number | null;
   current_a?: number | null;
+  power_w?: number | null;
   rpm?: number | null;
   pressure_hpa?: number | null;
   temp_c?: number | null;

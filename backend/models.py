@@ -15,6 +15,7 @@ class DeviceData(db.Model):
     # Sensor readings
     voltage_v = db.Column(db.Float)
     current_a = db.Column(db.Float)
+    power_w = db.Column(db.Float)  # Calculated power (W) = voltage * current
     rpm = db.Column(db.Integer)
     pressure_hpa = db.Column(db.Float)
     temp_c = db.Column(db.Float)
@@ -34,6 +35,7 @@ class DeviceData(db.Model):
             'timestamp': self.timestamp.isoformat(),
             'voltage_v': self.voltage_v,
             'current_a': self.current_a,
+            'power_w': self.power_w,
             'rpm': self.rpm,
             'pressure_hpa': self.pressure_hpa,
             'temp_c': self.temp_c,

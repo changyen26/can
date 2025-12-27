@@ -105,12 +105,21 @@ def ingest():
                 logger.warning(f"❌ Missing required field: {field}")
                 return jsonify({'error': f'Missing required field: {field}'}), 400
 
+        # Calculate power: P = V × I
+        voltage = data.get('voltage_v')
+        current = data.get('current_a')
+        power = None
+        if voltage is not None and current is not None:
+            power = voltage * current
+            logger.info(f"⚡ Calculated power: {power:.2f}W (V={voltage}V, I={current}A)")
+
         # Create device data entry
         device_data = DeviceData(
             device_id=data['device_id'],
             timestamp=datetime.fromtimestamp(data['ts'] / 1000.0),
-            voltage_v=data.get('voltage_v'),
-            current_a=data.get('current_a'),
+            voltage_v=voltage,
+            current_a=current,
+            power_w=power,
             rpm=data.get('rpm'),
             pressure_hpa=data.get('pressure_hpa'),
             temp_c=data.get('temp_c'),
@@ -129,6 +138,7 @@ def ingest():
             'timestamp': device_data.timestamp.isoformat(),
             'voltage_v': device_data.voltage_v,
             'current_a': device_data.current_a,
+            'power_w': device_data.power_w,
             'rpm': device_data.rpm,
             'pressure_hpa': device_data.pressure_hpa,
             'temp_c': device_data.temp_c,
@@ -186,7 +196,12 @@ def stream():
                     if not sse_clients[device_id]:
                         del sse_clients[device_id]
 
-    return Response(event_stream(), mimetype='text/event-stream')
+    response = Response(event_stream(), mimetype='text/event-stream')
+    response.headers['Cache-Control'] = 'no-cache'
+    response.headers['X-Accel-Buffering'] = 'no'
+    response.headers['Connection'] = 'keep-alive'
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    return response
 
 
 @app.route('/api/v1/devices')
@@ -241,6 +256,7 @@ def get_latest():
             'data': {
                 'voltage_v': latest.voltage_v,
                 'current_a': latest.current_a,
+                'power_w': latest.power_w,
                 'rpm': latest.rpm,
                 'pressure_hpa': latest.pressure_hpa,
                 'temp_c': latest.temp_c,
@@ -292,6 +308,7 @@ def get_history():
                 entry.update({
                     'voltage_v': record.voltage_v,
                     'current_a': record.current_a,
+                    'power_w': record.power_w,
                     'rpm': record.rpm,
                     'pressure_hpa': record.pressure_hpa,
                     'temp_c': record.temp_c,

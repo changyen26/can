@@ -1,11 +1,10 @@
 interface PowerCardProps {
+  power: number | null;
   voltage: number | null;
   current: number | null;
 }
 
-function PowerCard({ voltage, current }: PowerCardProps) {
-  const power = voltage !== null && current !== null ? voltage * current : null;
-
+function PowerCard({ power, voltage, current }: PowerCardProps) {
   const displayValue = power !== null
     ? power.toFixed(2)
     : '--';
@@ -26,9 +25,9 @@ function PowerCard({ voltage, current }: PowerCardProps) {
         <span>{displayValue}</span>
         <span className="metric-unit">W</span>
       </div>
-      {power !== null && (
+      {power !== null && voltage !== null && current !== null && (
         <div className="power-formula">
-          P = V × I = {voltage?.toFixed(2)} × {current?.toFixed(2)}
+          P = V × I = {voltage.toFixed(2)} × {current.toFixed(2)}
         </div>
       )}
     </div>
