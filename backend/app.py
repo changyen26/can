@@ -1,3 +1,7 @@
+# Eventlet monkey patching - MUST be first
+import eventlet
+eventlet.monkey_patch()
+
 import os
 import json
 import time
@@ -7,8 +11,8 @@ from datetime import datetime, timedelta
 from flask import Flask, request, jsonify, Response, send_from_directory
 from flask_cors import CORS
 from functools import wraps
-import queue
-import threading
+from eventlet.queue import Queue, Empty
+from eventlet import spawn
 from models import db, DeviceData
 
 # Configure logging
@@ -170,7 +174,7 @@ def stream():
     logger.info(f"🔌 SSE connection opened: device_id={device_id}")
 
     def event_stream():
-        client_queue = queue.Queue(maxsize=10)
+        client_queue = Queue(maxsize=10)
 
         with clients_lock:
             if device_id not in sse_clients:
@@ -185,7 +189,7 @@ def stream():
                 try:
                     data = client_queue.get(timeout=10)  # 10 second timeout
                     yield f"data: {json.dumps(data)}\n\n"
-                except queue.Empty:
+                except Empty:
                     # Send keepalive every 10 seconds to prevent worker timeout
                     yield f": keepalive {datetime.utcnow().isoformat()}\n\n"
         finally:
