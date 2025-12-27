@@ -1,7 +1,3 @@
-# Gevent monkey patching - MUST be first for production
-from gevent import monkey
-monkey.patch_all()
-
 import os
 import json
 import time
@@ -198,10 +194,10 @@ def stream():
 
             while True:
                 try:
-                    data = client_queue.get(timeout=10)  # 10 second timeout
+                    data = client_queue.get(timeout=15)  # 15 second timeout
                     yield f"data: {json.dumps(data)}\n\n"
                 except Empty:
-                    # Send keepalive every 10 seconds to prevent worker timeout
+                    # Send keepalive every 15 seconds to keep connection alive
                     yield f": keepalive {datetime.utcnow().isoformat()}\n\n"
         finally:
             logger.info(f"🔌 SSE connection closed: device_id={device_id}")
