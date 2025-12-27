@@ -1,0 +1,4 @@
+{
+  "build_command": "cd frontend && npm install && npm run build",
+  "install_command": "cd backend && pip install -r requirements.txt"
+}
