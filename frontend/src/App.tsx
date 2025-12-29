@@ -9,6 +9,8 @@ const METRICS: Metric[] = [
   { key: 'wind_voltage_v', label: '風機電壓', unit: 'V', color: '#8884d8' },
   { key: 'current_a', label: '風機電流', unit: 'A', color: '#82ca9d' },
   { key: 'solar_voltage_v', label: '太陽能電壓', unit: 'V', color: '#ffc658' },
+  { key: 'temp_c', label: '溫度', unit: '°C', color: '#8dd1e1' },
+  { key: 'pressure_hpa', label: '氣壓', unit: 'hPa', color: '#ff7c7c' },
 ];
 
 const TIME_RANGES: { value: TimeRange; label: string; ms: number }[] = [
@@ -468,6 +470,15 @@ function App() {
               metrics={[
                 { key: 'current_a', label: '風機電流 (A)', color: '#82ca9d' },
                 { key: 'power_w', label: '功率 (W)', color: '#ff7c7c' },
+              ]}
+            />
+
+            <Chart
+              title="環境指標"
+              data={historyData}
+              metrics={[
+                { key: 'temp_c', label: '溫度 (°C)', color: '#8dd1e1' },
+                { key: 'pressure_hpa', label: '氣壓 (hPa)', color: '#ff7c7c' },
               ]}
             />
           </>

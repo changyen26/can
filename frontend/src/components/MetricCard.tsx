@@ -7,7 +7,9 @@ interface MetricCardProps {
 function MetricCard({ label, value, unit }: MetricCardProps) {
   const displayValue = value !== null && value !== undefined
     ? typeof value === 'number'
-      ? value.toFixed(3)  // 顯示到小數點後 3 位（毫級精度）
+      ? Math.abs(value) < 0.01
+        ? value.toFixed(6)  // 極小數值顯示 6 位（微級精度，如 0.000781 A）
+        : value.toFixed(3)  // 一般數值顯示 3 位（毫級精度）
       : value
     : '--';
 

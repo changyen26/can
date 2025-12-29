@@ -5,9 +5,12 @@ interface PowerCardProps {
 }
 
 function PowerCard({ power, voltage, current }: PowerCardProps) {
-  const displayValue = power !== null
-    ? power.toFixed(3)  // 顯示到小數點後 3 位（毫級精度）
-    : '--';
+  const formatValue = (val: number | null) => {
+    if (val === null) return '--';
+    return Math.abs(val) < 0.01 ? val.toFixed(6) : val.toFixed(3);
+  };
+
+  const displayValue = formatValue(power);
 
   const getPowerStatus = () => {
     if (power === null) return 'unknown';
@@ -27,7 +30,7 @@ function PowerCard({ power, voltage, current }: PowerCardProps) {
       </div>
       {power !== null && voltage !== null && current !== null && (
         <div className="power-formula">
-          P = V × I = {voltage.toFixed(3)} × {current.toFixed(3)}
+          P = V × I = {formatValue(voltage)} × {formatValue(current)}
         </div>
       )}
     </div>
