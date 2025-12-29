@@ -6,8 +6,8 @@ interface MetricCardProps {
 
 function MetricCard({ label, value, unit }: MetricCardProps) {
   const displayValue = value !== null && value !== undefined
-    ? typeof value === 'number' && !Number.isInteger(value)
-      ? value.toFixed(2)
+    ? typeof value === 'number'
+      ? value.toFixed(3)  // 顯示到小數點後 3 位（毫級精度）
       : value
     : '--';
 

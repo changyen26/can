@@ -6,13 +6,9 @@ import PowerCard from './components/PowerCard';
 import Chart from './components/Chart';
 
 const METRICS: Metric[] = [
-  { key: 'voltage_v', label: '電壓', unit: 'V', color: '#8884d8' },
-  { key: 'current_a', label: '電流', unit: 'A', color: '#82ca9d' },
-  { key: 'rpm', label: '轉速', unit: 'RPM', color: '#ffc658' },
-  { key: 'pressure_hpa', label: '氣壓', unit: 'hPa', color: '#ff7c7c' },
-  { key: 'temp_c', label: '溫度', unit: '°C', color: '#8dd1e1' },
-  { key: 'humidity_pct', label: '濕度', unit: '%', color: '#a4de6c' },
-  { key: 'wind_mps', label: '風速', unit: 'm/s', color: '#d0ed57' },
+  { key: 'wind_voltage_v', label: '風機電壓', unit: 'V', color: '#8884d8' },
+  { key: 'current_a', label: '風機電流', unit: 'A', color: '#82ca9d' },
+  { key: 'solar_voltage_v', label: '太陽能電壓', unit: 'V', color: '#ffc658' },
 ];
 
 const TIME_RANGES: { value: TimeRange; label: string; ms: number }[] = [
@@ -59,13 +55,22 @@ function App() {
       setDevices(devicesData);
       if (devicesData.length > 0 && !selectedDevice) {
         setSelectedDevice(devicesData[0].device_id);
+      } else if (devicesData.length === 0 && !selectedDevice) {
+        // 沒有設備時，使用默認設備 ID 嘗試載入數據
+        console.log('無設備列表，使用默認設備 ID: esp32-001');
+        setSelectedDevice('esp32-001');
       }
       setLoading(false);
       setError(null);
     } catch (err) {
       console.error('Failed to load devices:', err);
-      setError(err instanceof Error ? err.message : '無法載入裝置');
+      // 即使 API 失敗，也嘗試使用默認設備
+      if (!selectedDevice) {
+        console.log('API 失敗，使用默認設備 ID: esp32-001');
+        setSelectedDevice('esp32-001');
+      }
       setLoading(false);
+      // 不設置 error，讓數據載入邏輯自己處理
     }
   }, [selectedDevice]);
 
@@ -305,7 +310,9 @@ function App() {
     );
   }
 
-  if (devices.length === 0) {
+  // 只有在沒有設備且沒有任何數據時才顯示空狀態
+  // 如果有歷史數據或最新數據，即使沒有在線設備也應該顯示
+  if (devices.length === 0 && !latestData && historyData.length === 0) {
     return (
       <div className="app">
         <div className="header">
@@ -380,11 +387,19 @@ function App() {
           <div className="control-item">
             <label>裝置</label>
             <select value={selectedDevice} onChange={(e) => setSelectedDevice(e.target.value)}>
-              {devices.map((device) => (
-                <option key={device.device_id} value={device.device_id}>
-                  {device.device_id}
-                </option>
-              ))}
+              {devices.length > 0 ? (
+                devices.map((device) => (
+                  <option key={device.device_id} value={device.device_id}>
+                    {device.device_id}
+                  </option>
+                ))
+              ) : (
+                selectedDevice && (
+                  <option key={selectedDevice} value={selectedDevice}>
+                    {selectedDevice}
+                  </option>
+                )
+              )}
             </select>
           </div>
 
@@ -416,7 +431,7 @@ function App() {
       <div className="metrics-grid">
         <PowerCard
           power={getValue('power_w')}
-          voltage={getValue('voltage_v')}
+          voltage={getValue('wind_voltage_v') ?? getValue('voltage_v')}
           current={getValue('current_a')}
         />
         {METRICS.map((metric) => (
@@ -439,30 +454,20 @@ function App() {
         ) : (
           <>
             <Chart
-              title="電氣指標"
+              title="風機與太陽能電壓"
               data={historyData}
               metrics={[
-                { key: 'voltage_v', label: '電壓 (V)', color: '#8884d8' },
-                { key: 'current_a', label: '電流 (A)', color: '#82ca9d' },
+                { key: 'wind_voltage_v', label: '風機電壓 (V)', color: '#8884d8' },
+                { key: 'solar_voltage_v', label: '太陽能電壓 (V)', color: '#ffc658' },
               ]}
             />
 
             <Chart
-              title="機械指標"
+              title="風機電流與功率"
               data={historyData}
               metrics={[
-                { key: 'rpm', label: '轉速 (RPM)', color: '#ffc658' },
-                { key: 'wind_mps', label: '風速 (m/s)', color: '#d0ed57' },
-              ]}
-            />
-
-            <Chart
-              title="環境指標"
-              data={historyData}
-              metrics={[
-                { key: 'temp_c', label: '溫度 (°C)', color: '#8dd1e1' },
-                { key: 'humidity_pct', label: '濕度 (%)', color: '#a4de6c' },
-                { key: 'pressure_hpa', label: '氣壓 (hPa)', color: '#ff7c7c' },
+                { key: 'current_a', label: '風機電流 (A)', color: '#82ca9d' },
+                { key: 'power_w', label: '功率 (W)', color: '#ff7c7c' },
               ]}
             />
           </>

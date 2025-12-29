@@ -5,11 +5,22 @@ import logging
 import random
 import threading
 from queue import Queue, Empty, Full
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from flask import Flask, request, jsonify, Response, send_from_directory
 from flask_cors import CORS
 from functools import wraps
 from models import db, DeviceData
+
+# 台灣時區 (UTC+8)
+TAIWAN_TZ = timezone(timedelta(hours=8))
+
+def now_taiwan():
+    """獲取當前台灣時間"""
+    return datetime.now(TAIWAN_TZ)
+
+def from_timestamp_taiwan(ts_ms):
+    """從毫秒時間戳轉換為台灣時間"""
+    return datetime.fromtimestamp(ts_ms / 1000.0, TAIWAN_TZ)
 
 # Configure logging
 logging.basicConfig(
@@ -154,7 +165,7 @@ def ingest():
         # Create device data entry
         device_data = DeviceData(
             device_id=data['device_id'],
-            timestamp=datetime.utcfromtimestamp(data['ts'] / 1000.0),  # Use UTC
+            timestamp=from_timestamp_taiwan(data['ts']),  # Taiwan timezone (UTC+8)
             voltage_v=voltage,
             current_a=current,
             power_w=power,
@@ -229,7 +240,7 @@ def stream():
                     yield f"data: {json.dumps(data)}\n\n"
                 except Empty:
                     # Send keepalive every 15 seconds to keep connection alive
-                    yield f": keepalive {datetime.utcnow().isoformat()}\n\n"
+                    yield f": keepalive {now_taiwan().isoformat()}\n\n"
         finally:
             logger.info(f"🔌 SSE connection closed: device_id={device_id}")
             with clients_lock:
@@ -261,7 +272,7 @@ def get_devices():
                 .order_by(DeviceData.timestamp.desc()).first()
 
             if latest:
-                offline = (datetime.utcnow() - latest.timestamp).total_seconds() > OFFLINE_THRESHOLD_SECONDS
+                offline = (now_taiwan() - latest.timestamp).total_seconds() > OFFLINE_THRESHOLD_SECONDS
                 device_list.append({
                     'device_id': device_id,
                     'last_seen': latest.timestamp.isoformat(),
@@ -289,7 +300,7 @@ def get_latest():
         if not latest:
             return jsonify({'error': 'No data found for device'}), 404
 
-        offline = (datetime.utcnow() - latest.timestamp).total_seconds() > OFFLINE_THRESHOLD_SECONDS
+        offline = (now_taiwan() - latest.timestamp).total_seconds() > OFFLINE_THRESHOLD_SECONDS
 
         return jsonify({
             'device_id': latest.device_id,
@@ -328,11 +339,11 @@ def get_history():
         query = DeviceData.query.filter_by(device_id=device_id)
 
         if from_ts:
-            from_dt = datetime.utcfromtimestamp(int(from_ts) / 1000.0)  # Use UTC
+            from_dt = from_timestamp_taiwan(int(from_ts))  # Taiwan timezone
             query = query.filter(DeviceData.timestamp >= from_dt)
 
         if to_ts:
-            to_dt = datetime.utcfromtimestamp(int(to_ts) / 1000.0)  # Use UTC
+            to_dt = from_timestamp_taiwan(int(to_ts))  # Taiwan timezone
             query = query.filter(DeviceData.timestamp <= to_dt)
 
         results = query.order_by(DeviceData.timestamp.desc()).limit(limit).all()
@@ -376,7 +387,7 @@ def get_history():
 @app.route('/api/v1/health')
 def health():
     """Health check endpoint"""
-    return jsonify({'status': 'healthy', 'timestamp': datetime.utcnow().isoformat()})
+    return jsonify({'status': 'healthy', 'timestamp': now_taiwan().isoformat()})
 
 
 # Development endpoints
@@ -389,7 +400,7 @@ def simulate_data():
 
         logger.info(f"🧪 Simulating {count} data points for device {device_id}")
 
-        now = datetime.utcnow()
+        now = now_taiwan()
         created = []
 
         for i in range(count):
