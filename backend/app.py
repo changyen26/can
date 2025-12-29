@@ -14,21 +14,21 @@ from models import db, DeviceData
 # 台灣時區 (UTC+8)
 TAIWAN_TZ = timezone(timedelta(hours=8))
 
-def now_taiwan():
-    """獲取當前台灣時間"""
-    return datetime.now(timezone.utc).astimezone(TAIWAN_TZ)
+def now_utc():
+    """獲取當前 UTC 時間（不帶時區，用於資料庫儲存）"""
+    return datetime.utcnow()
 
-def from_timestamp_taiwan(ts_ms):
-    """從毫秒時間戳轉換為台灣時間"""
-    return datetime.fromtimestamp(ts_ms / 1000.0, timezone.utc).astimezone(TAIWAN_TZ)
+def from_timestamp_utc(ts_ms):
+    """從毫秒時間戳轉換為 UTC datetime（不帶時區）"""
+    return datetime.utcfromtimestamp(ts_ms / 1000.0)
 
-def ensure_taiwan_tz(dt):
-    """確保 datetime 有台灣時區信息"""
+def to_taiwan_time(dt):
+    """將 datetime 轉換為台灣時區顯示"""
     if dt is None:
         return None
+    # 假設資料庫中的 datetime 是 UTC
     if dt.tzinfo is None:
-        # 如果沒有時區信息，假設是 UTC 並轉換為台灣時間
-        return dt.replace(tzinfo=timezone.utc).astimezone(TAIWAN_TZ)
+        dt = dt.replace(tzinfo=timezone.utc)
     return dt.astimezone(TAIWAN_TZ)
 
 # Configure logging
@@ -174,7 +174,7 @@ def ingest():
         # Create device data entry
         device_data = DeviceData(
             device_id=data['device_id'],
-            timestamp=from_timestamp_taiwan(data['ts']),  # Taiwan timezone (UTC+8)
+            timestamp=from_timestamp_utc(data['ts']),  # Store as UTC
             voltage_v=voltage,
             current_a=current,
             power_w=power,
@@ -193,10 +193,9 @@ def ingest():
         logger.info(f"✅ Data saved to DB: id={device_data.id}, device_id={device_data.device_id}")
 
         # Broadcast to SSE clients
-        timestamp_tz = ensure_taiwan_tz(device_data.timestamp)
         broadcast_data = {
             'device_id': device_data.device_id,
-            'timestamp': timestamp_tz.isoformat(),
+            'timestamp': to_taiwan_time(device_data.timestamp).isoformat(),
             'voltage_v': device_data.voltage_v,
             'current_a': device_data.current_a,
             'power_w': device_data.power_w,
@@ -250,7 +249,7 @@ def stream():
                     yield f"data: {json.dumps(data)}\n\n"
                 except Empty:
                     # Send keepalive every 15 seconds to keep connection alive
-                    yield f": keepalive {now_taiwan().isoformat()}\n\n"
+                    yield f": keepalive {to_taiwan_time(now_utc()).isoformat()}\n\n"
         finally:
             logger.info(f"🔌 SSE connection closed: device_id={device_id}")
             with clients_lock:
@@ -282,8 +281,8 @@ def get_devices():
                 .order_by(DeviceData.timestamp.desc()).first()
 
             if latest:
-                timestamp_tz = ensure_taiwan_tz(latest.timestamp)
-                offline = (now_taiwan() - timestamp_tz).total_seconds() > OFFLINE_THRESHOLD_SECONDS
+                timestamp_tz = to_taiwan_time(latest.timestamp)
+                offline = (to_taiwan_time(now_utc()) - timestamp_tz).total_seconds() > OFFLINE_THRESHOLD_SECONDS
                 device_list.append({
                     'device_id': device_id,
                     'last_seen': timestamp_tz.isoformat(),
@@ -311,8 +310,8 @@ def get_latest():
         if not latest:
             return jsonify({'error': 'No data found for device'}), 404
 
-        timestamp_tz = ensure_taiwan_tz(latest.timestamp)
-        offline = (now_taiwan() - timestamp_tz).total_seconds() > OFFLINE_THRESHOLD_SECONDS
+        timestamp_tz = to_taiwan_time(latest.timestamp)
+        offline = (to_taiwan_time(now_utc()) - timestamp_tz).total_seconds() > OFFLINE_THRESHOLD_SECONDS
 
         return jsonify({
             'device_id': latest.device_id,
@@ -351,18 +350,18 @@ def get_history():
         query = DeviceData.query.filter_by(device_id=device_id)
 
         if from_ts:
-            from_dt = from_timestamp_taiwan(int(from_ts))  # Taiwan timezone
+            from_dt = from_timestamp_utc(int(from_ts))  # Convert to UTC for DB query
             query = query.filter(DeviceData.timestamp >= from_dt)
 
         if to_ts:
-            to_dt = from_timestamp_taiwan(int(to_ts))  # Taiwan timezone
+            to_dt = from_timestamp_utc(int(to_ts))  # Convert to UTC for DB query
             query = query.filter(DeviceData.timestamp <= to_dt)
 
         results = query.order_by(DeviceData.timestamp.desc()).limit(limit).all()
 
         history = []
         for record in reversed(results):
-            timestamp_tz = ensure_taiwan_tz(record.timestamp)
+            timestamp_tz = to_taiwan_time(record.timestamp)
             entry = {
                 'timestamp': timestamp_tz.isoformat(),
                 'ts': int(timestamp_tz.timestamp() * 1000)
@@ -400,7 +399,7 @@ def get_history():
 @app.route('/api/v1/health')
 def health():
     """Health check endpoint"""
-    return jsonify({'status': 'healthy', 'timestamp': now_taiwan().isoformat()})
+    return jsonify({'status': 'healthy', 'timestamp': to_taiwan_time(now_utc()).isoformat()})
 
 
 # Development endpoints
@@ -413,7 +412,7 @@ def simulate_data():
 
         logger.info(f"🧪 Simulating {count} data points for device {device_id}")
 
-        now = now_taiwan()
+        now = now_utc()  # Use UTC for database storage
         created = []
 
         for i in range(count):
