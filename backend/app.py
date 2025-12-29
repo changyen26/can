@@ -22,6 +22,15 @@ def from_timestamp_taiwan(ts_ms):
     """從毫秒時間戳轉換為台灣時間"""
     return datetime.fromtimestamp(ts_ms / 1000.0, TAIWAN_TZ)
 
+def ensure_taiwan_tz(dt):
+    """確保 datetime 有台灣時區信息"""
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        # 如果沒有時區信息，假設是 UTC 並轉換為台灣時間
+        return dt.replace(tzinfo=timezone.utc).astimezone(TAIWAN_TZ)
+    return dt.astimezone(TAIWAN_TZ)
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -184,9 +193,10 @@ def ingest():
         logger.info(f"✅ Data saved to DB: id={device_data.id}, device_id={device_data.device_id}")
 
         # Broadcast to SSE clients
+        timestamp_tz = ensure_taiwan_tz(device_data.timestamp)
         broadcast_data = {
             'device_id': device_data.device_id,
-            'timestamp': device_data.timestamp.isoformat(),
+            'timestamp': timestamp_tz.isoformat(),
             'voltage_v': device_data.voltage_v,
             'current_a': device_data.current_a,
             'power_w': device_data.power_w,
@@ -272,10 +282,11 @@ def get_devices():
                 .order_by(DeviceData.timestamp.desc()).first()
 
             if latest:
-                offline = (now_taiwan() - latest.timestamp).total_seconds() > OFFLINE_THRESHOLD_SECONDS
+                timestamp_tz = ensure_taiwan_tz(latest.timestamp)
+                offline = (now_taiwan() - timestamp_tz).total_seconds() > OFFLINE_THRESHOLD_SECONDS
                 device_list.append({
                     'device_id': device_id,
-                    'last_seen': latest.timestamp.isoformat(),
+                    'last_seen': timestamp_tz.isoformat(),
                     'offline': offline
                 })
 
@@ -300,11 +311,12 @@ def get_latest():
         if not latest:
             return jsonify({'error': 'No data found for device'}), 404
 
-        offline = (now_taiwan() - latest.timestamp).total_seconds() > OFFLINE_THRESHOLD_SECONDS
+        timestamp_tz = ensure_taiwan_tz(latest.timestamp)
+        offline = (now_taiwan() - timestamp_tz).total_seconds() > OFFLINE_THRESHOLD_SECONDS
 
         return jsonify({
             'device_id': latest.device_id,
-            'timestamp': latest.timestamp.isoformat(),
+            'timestamp': timestamp_tz.isoformat(),
             'offline': offline,
             'data': {
                 'voltage_v': latest.voltage_v,
@@ -350,9 +362,10 @@ def get_history():
 
         history = []
         for record in reversed(results):
+            timestamp_tz = ensure_taiwan_tz(record.timestamp)
             entry = {
-                'timestamp': record.timestamp.isoformat(),
-                'ts': int(record.timestamp.timestamp() * 1000)
+                'timestamp': timestamp_tz.isoformat(),
+                'ts': int(timestamp_tz.timestamp() * 1000)
             }
 
             if metric:
