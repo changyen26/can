@@ -21,6 +21,8 @@ class DeviceData(db.Model):
     temp_c = db.Column(db.Float)
     humidity_pct = db.Column(db.Float)
     wind_mps = db.Column(db.Float)
+    wind_voltage_v = db.Column(db.Float)  # Wind generator voltage
+    solar_voltage_v = db.Column(db.Float)  # Solar panel voltage
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -40,5 +42,7 @@ class DeviceData(db.Model):
             'pressure_hpa': self.pressure_hpa,
             'temp_c': self.temp_c,
             'humidity_pct': self.humidity_pct,
-            'wind_mps': self.wind_mps
+            'wind_mps': self.wind_mps,
+            'wind_voltage_v': self.wind_voltage_v,
+            'solar_voltage_v': self.solar_voltage_v
         }

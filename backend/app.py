@@ -113,9 +113,39 @@ def ingest():
                 logger.warning(f"❌ Missing required field: {field}")
                 return jsonify({'error': f'Missing required field: {field}'}), 400
 
+        # Helper function to safely convert to float
+        def safe_float(value, field_name):
+            if value is None:
+                return None
+            try:
+                return float(value)
+            except (ValueError, TypeError):
+                raise ValueError(f"Invalid type for field '{field_name}': cannot convert to float")
+
+        # Extract and validate optional float fields
+        try:
+            voltage = safe_float(data.get('voltage_v'), 'voltage_v')
+            current = safe_float(data.get('current_a'), 'current_a')
+            pressure_hpa = safe_float(data.get('pressure_hpa'), 'pressure_hpa')
+            temp_c = safe_float(data.get('temp_c'), 'temp_c')
+            humidity_pct = safe_float(data.get('humidity_pct'), 'humidity_pct')
+            wind_mps = safe_float(data.get('wind_mps'), 'wind_mps')
+            wind_voltage_v = safe_float(data.get('wind_voltage_v'), 'wind_voltage_v')
+            solar_voltage_v = safe_float(data.get('solar_voltage_v'), 'solar_voltage_v')
+        except ValueError as e:
+            logger.warning(f"❌ Type validation error: {str(e)}")
+            return jsonify({'error': str(e)}), 400
+
+        # Extract rpm (integer field)
+        rpm = data.get('rpm')
+        if rpm is not None:
+            try:
+                rpm = int(rpm)
+            except (ValueError, TypeError):
+                logger.warning(f"❌ Invalid type for field 'rpm': cannot convert to int")
+                return jsonify({'error': "Invalid type for field 'rpm': cannot convert to int"}), 400
+
         # Calculate power: P = V × I
-        voltage = data.get('voltage_v')
-        current = data.get('current_a')
         power = None
         if voltage is not None and current is not None:
             power = voltage * current
@@ -128,11 +158,13 @@ def ingest():
             voltage_v=voltage,
             current_a=current,
             power_w=power,
-            rpm=data.get('rpm'),
-            pressure_hpa=data.get('pressure_hpa'),
-            temp_c=data.get('temp_c'),
-            humidity_pct=data.get('humidity_pct'),
-            wind_mps=data.get('wind_mps')
+            rpm=rpm,
+            pressure_hpa=pressure_hpa,
+            temp_c=temp_c,
+            humidity_pct=humidity_pct,
+            wind_mps=wind_mps,
+            wind_voltage_v=wind_voltage_v,
+            solar_voltage_v=solar_voltage_v
         )
 
         db.session.add(device_data)
@@ -151,7 +183,9 @@ def ingest():
             'pressure_hpa': device_data.pressure_hpa,
             'temp_c': device_data.temp_c,
             'humidity_pct': device_data.humidity_pct,
-            'wind_mps': device_data.wind_mps
+            'wind_mps': device_data.wind_mps,
+            'wind_voltage_v': device_data.wind_voltage_v,
+            'solar_voltage_v': device_data.solar_voltage_v
         }
         broadcast_to_device_clients(device_data.device_id, broadcast_data)
         logger.info(f"📡 Broadcast to SSE clients: device_id={device_data.device_id}")
@@ -269,7 +303,9 @@ def get_latest():
                 'pressure_hpa': latest.pressure_hpa,
                 'temp_c': latest.temp_c,
                 'humidity_pct': latest.humidity_pct,
-                'wind_mps': latest.wind_mps
+                'wind_mps': latest.wind_mps,
+                'wind_voltage_v': latest.wind_voltage_v,
+                'solar_voltage_v': latest.solar_voltage_v
             }
         })
     except Exception as e:
@@ -321,7 +357,9 @@ def get_history():
                     'pressure_hpa': record.pressure_hpa,
                     'temp_c': record.temp_c,
                     'humidity_pct': record.humidity_pct,
-                    'wind_mps': record.wind_mps
+                    'wind_mps': record.wind_mps,
+                    'wind_voltage_v': record.wind_voltage_v,
+                    'solar_voltage_v': record.solar_voltage_v
                 })
 
             history.append(entry)
@@ -361,6 +399,8 @@ def simulate_data():
             voltage = round(12 + random.uniform(-1, 1), 2)
             current = round(1.2 + random.uniform(-0.2, 0.3), 2)
             power = voltage * current  # Calculate power
+            wind_voltage = round(5 + random.uniform(-0.5, 0.5), 2)
+            solar_voltage = round(18 + random.uniform(-1, 1), 2)
 
             device_data = DeviceData(
                 device_id=device_id,
@@ -372,7 +412,9 @@ def simulate_data():
                 pressure_hpa=round(1013 + random.uniform(-5, 5), 2),
                 temp_c=round(25 + random.uniform(-3, 3), 1),
                 humidity_pct=round(55 + random.uniform(-10, 10), 1),
-                wind_mps=round(3.5 + random.uniform(-1, 1.5), 1)
+                wind_mps=round(3.5 + random.uniform(-1, 1.5), 1),
+                wind_voltage_v=wind_voltage,
+                solar_voltage_v=solar_voltage
             )
 
             db.session.add(device_data)
