@@ -16,11 +16,11 @@ TAIWAN_TZ = timezone(timedelta(hours=8))
 
 def now_taiwan():
     """獲取當前台灣時間"""
-    return datetime.now(TAIWAN_TZ)
+    return datetime.now(timezone.utc).astimezone(TAIWAN_TZ)
 
 def from_timestamp_taiwan(ts_ms):
     """從毫秒時間戳轉換為台灣時間"""
-    return datetime.fromtimestamp(ts_ms / 1000.0, TAIWAN_TZ)
+    return datetime.fromtimestamp(ts_ms / 1000.0, timezone.utc).astimezone(TAIWAN_TZ)
 
 def ensure_taiwan_tz(dt):
     """確保 datetime 有台灣時區信息"""
