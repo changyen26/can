@@ -34,7 +34,7 @@ def generate_sensor_data():
     # 模擬真實的風機數據變化
     voltage = round(random.uniform(11.5, 13.5), 2)      # 電壓 (V)
     current = round(random.uniform(0.8, 2.0), 2)        # 電流 (A)
-    rpm = random.randint(2800, 4200)                    # 轉速 (RPM)
+    # rpm = random.randint(2800, 4200)                    # 轉速 (RPM) - 已停用
     pressure = round(random.uniform(1010.0, 1020.0), 2) # 氣壓 (hPa)
     temp = round(random.uniform(20.0, 35.0), 1)         # 溫度 (°C)
     humidity = round(random.uniform(40.0, 70.0), 1)     # 濕度 (%)
@@ -45,7 +45,7 @@ def generate_sensor_data():
         "ts": int(time.time() * 1000),  # 當前時間戳（毫秒）
         "voltage_v": voltage,
         "current_a": current,
-        "rpm": rpm,
+        # "rpm": rpm,  # 轉速 - 已停用
         "pressure_hpa": pressure,
         "temp_c": temp,
         "humidity_pct": humidity,
@@ -72,8 +72,8 @@ def send_data(data):
             print(f"✅ [{datetime.now().strftime('%H:%M:%S')}] "
                   f"數據已發送 | 功率: {power:.2f}W | "
                   f"電壓: {data['voltage_v']}V | "
-                  f"電流: {data['current_a']}A | "
-                  f"轉速: {data['rpm']} RPM")
+                  f"電流: {data['current_a']}A")
+                  # f"轉速: {data['rpm']} RPM")  # 轉速顯示 - 已停用
             return True
         else:
             print(f"❌ 發送失敗: {response.status_code} - {response.text}")

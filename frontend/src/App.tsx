@@ -88,9 +88,48 @@ function App() {
       setError(null);
     } catch (err) {
       console.error('Failed to load latest data:', err);
-      setError(err instanceof Error ? err.message : '無法載入最新數據');
+      // 如果沒有最新數據，嘗試從歷史資料取最後一筆
+      console.log('嘗試從歷史資料載入最後一筆數據...');
+      try {
+        const range = TIME_RANGES.find((r) => r.value === timeRange);
+        if (range) {
+          const now = Date.now();
+          const from = now - range.ms;
+          const history = await api.getHistory(selectedDevice, from, now);
+
+          if (history && history.length > 0) {
+            // 取最後一筆歷史數據作為最新數據
+            const lastHistoryItem = history[history.length - 1];
+            const fallbackData: DeviceData = {
+              device_id: selectedDevice,
+              timestamp: lastHistoryItem.timestamp,
+              offline: true, // 標記為離線
+              data: {
+                voltage_v: lastHistoryItem.voltage_v ?? null,
+                current_a: lastHistoryItem.current_a ?? null,
+                power_w: lastHistoryItem.power_w ?? null,
+                rpm: lastHistoryItem.rpm ?? null,
+                pressure_hpa: lastHistoryItem.pressure_hpa ?? null,
+                temp_c: lastHistoryItem.temp_c ?? null,
+                humidity_pct: lastHistoryItem.humidity_pct ?? null,
+                wind_mps: lastHistoryItem.wind_mps ?? null,
+                wind_voltage_v: lastHistoryItem.wind_voltage_v ?? null,
+                solar_voltage_v: lastHistoryItem.solar_voltage_v ?? null
+              }
+            };
+            setLatestData(fallbackData);
+            setLastUpdate(new Date(lastHistoryItem.timestamp));
+            console.log('✓ 已從歷史資料載入最後一筆數據（設備離線）');
+            setError(null);
+            return;
+          }
+        }
+      } catch (historyErr) {
+        console.error('Failed to load history as fallback:', historyErr);
+      }
+      setError(err instanceof Error ? err.message : '無法載入數據');
     }
-  }, [selectedDevice]);
+  }, [selectedDevice, timeRange]);
 
   // Load history
   const loadHistory = useCallback(async () => {
@@ -162,6 +201,8 @@ function App() {
             temp_c: data.temp_c,
             humidity_pct: data.humidity_pct,
             wind_mps: data.wind_mps,
+            wind_voltage_v: data.wind_voltage_v,
+            solar_voltage_v: data.solar_voltage_v,
           });
 
           setLastUpdate(new Date());
@@ -179,6 +220,8 @@ function App() {
               temp_c: data.temp_c,
               humidity_pct: data.humidity_pct,
               wind_mps: data.wind_mps,
+              wind_voltage_v: data.wind_voltage_v,
+              solar_voltage_v: data.solar_voltage_v,
             };
             return [...prev, newPoint].slice(-1000); // Keep last 1000 points
           });

@@ -11,6 +11,8 @@ export interface DeviceData {
     temp_c: number | null;
     humidity_pct: number | null;
     wind_mps: number | null;
+    wind_voltage_v: number | null;
+    solar_voltage_v: number | null;
   };
   voltage_v?: number | null;
   current_a?: number | null;
@@ -20,6 +22,8 @@ export interface DeviceData {
   temp_c?: number | null;
   humidity_pct?: number | null;
   wind_mps?: number | null;
+  wind_voltage_v?: number | null;
+  solar_voltage_v?: number | null;
 }
 
 export interface Device {
@@ -39,6 +43,8 @@ export interface HistoryDataPoint {
   temp_c?: number | null;
   humidity_pct?: number | null;
   wind_mps?: number | null;
+  wind_voltage_v?: number | null;
+  solar_voltage_v?: number | null;
 }
 
 export type TimeRange = '5m' | '1h' | '24h';
