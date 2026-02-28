@@ -6,7 +6,7 @@ import random
 import threading
 from queue import Queue, Empty, Full
 from datetime import datetime, timedelta, timezone
-from flask import Flask, request, jsonify, Response, send_from_directory
+from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
 from functools import wraps
 from models import db, DeviceData
@@ -39,7 +39,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-app = Flask(__name__, static_folder='../frontend/dist', static_url_path='')
+app = Flask(__name__)
 
 # Configuration
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///windmill.db')
@@ -102,20 +102,6 @@ def broadcast_to_device_clients(device_id, data):
                 except Full:
                     pass
 
-
-@app.route('/')
-def index():
-    """Serve frontend"""
-    return send_from_directory(app.static_folder, 'index.html')
-
-
-@app.route('/<path:path>')
-def serve_static(path):
-    """Serve frontend static files"""
-    try:
-        return send_from_directory(app.static_folder, path)
-    except:
-        return send_from_directory(app.static_folder, 'index.html')
 
 
 @app.route('/api/v1/ingest', methods=['POST'])
