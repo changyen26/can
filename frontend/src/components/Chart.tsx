@@ -23,47 +23,48 @@ function Chart({ title, data, metrics, timeRange }: ChartProps) {
     return date.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   };
 
-  const formatTooltipLabel = (timestamp: string) => {
-    const date = new Date(timestamp);
-    return date.toLocaleString('zh-TW', {
+  const formatTooltip = (timestamp: string) =>
+    new Date(timestamp).toLocaleString('zh-TW', {
       month: '2-digit', day: '2-digit',
-      hour: '2-digit', minute: '2-digit', second: '2-digit'
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
     });
-  };
 
   return (
-    <div className="chart-container">
-      <h3 className="chart-title">{title}</h3>
-      <ResponsiveContainer width="100%" height={260}>
-        <LineChart data={data} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.07)" />
+    <div className="p-5 border-r border-b border-slate-800/80 last:border-r-0 [&:nth-child(even)]:border-r-0">
+      <p className="text-xs font-semibold text-slate-400 tracking-wider mb-4 pl-3 border-l-2 border-cyan-500/60">
+        {title}
+      </p>
+      <ResponsiveContainer width="100%" height={220}>
+        <LineChart data={data} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
           <XAxis
             dataKey="timestamp"
             tickFormatter={formatXAxis}
             minTickGap={60}
-            tick={{ fill: '#7a9cc0', fontSize: 11 }}
-            axisLine={{ stroke: 'rgba(255,255,255,0.15)' }}
+            tick={{ fill: '#475569', fontSize: 10 }}
+            axisLine={{ stroke: 'rgba(255,255,255,0.08)' }}
             tickLine={false}
           />
           <YAxis
-            tick={{ fill: '#7a9cc0', fontSize: 11 }}
+            tick={{ fill: '#475569', fontSize: 10 }}
             axisLine={false}
             tickLine={false}
-            width={45}
+            width={40}
           />
           <Tooltip
-            labelFormatter={formatTooltipLabel}
+            labelFormatter={formatTooltip}
             contentStyle={{
-              background: '#0f1729',
-              border: '1px solid rgba(0,212,255,0.3)',
-              borderRadius: 8,
-              color: '#e0e0e0',
+              background: '#0f172a',
+              border: '1px solid rgba(148,163,184,0.15)',
+              borderRadius: 10,
+              color: '#e2e8f0',
               fontSize: 12,
+              boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
             }}
-            labelStyle={{ color: '#00d4ff', marginBottom: 4 }}
+            labelStyle={{ color: '#94a3b8', marginBottom: 4, fontSize: 11 }}
           />
           <Legend
-            wrapperStyle={{ fontSize: 12, color: '#b0b0b0', paddingTop: 8 }}
+            wrapperStyle={{ fontSize: 11, color: '#64748b', paddingTop: 8 }}
           />
           {metrics.map((metric) => (
             <Line
