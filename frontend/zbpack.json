@@ -1,3 +1,6 @@
 {
-  "port": 8080
+  "build_command": "npm install && npm run build",
+  "output_dir": "dist",
+  "node_version": "20",
+  "node_package_manager": "npm"
 }
