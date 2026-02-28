@@ -3,19 +3,15 @@ import os
 
 # Server socket
 bind = f"0.0.0.0:{os.getenv('PORT', '8080')}"
-backlog = 2048
 
-# Worker processes
-workers = 4
-worker_class = 'gthread'
-threads = 8
+# Worker processes - use gevent for SSE support
+workers = 1
+worker_class = 'gevent'
 worker_connections = 1000
-max_requests = 0
-max_requests_jitter = 0
 
-# Timeout settings - Very long timeout for SSE connections
-timeout = 3600  # 1 hour
-graceful_timeout = 3600  # 1 hour
+# Timeout settings
+timeout = 120
+graceful_timeout = 30
 keepalive = 75
 
 # Logging
@@ -26,15 +22,4 @@ access_log_format = '%(h)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s"
 
 # Process naming
 proc_name = 'windmill-monitor'
-
-# Server mechanics
 daemon = False
-pidfile = None
-umask = 0
-user = None
-group = None
-tmp_upload_dir = None
-
-# SSL
-keyfile = None
-certfile = None
