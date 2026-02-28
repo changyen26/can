@@ -104,6 +104,11 @@ def broadcast_to_device_clients(device_id, data):
 
 
 
+@app.route('/')
+def index():
+    return jsonify({'status': 'ok', 'service': 'windmill-monitor-api'})
+
+
 @app.route('/api/v1/ingest', methods=['POST'])
 @require_api_key
 def ingest():
