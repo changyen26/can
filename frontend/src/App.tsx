@@ -5,12 +5,14 @@ import MetricCard from './components/MetricCard';
 import PowerCard from './components/PowerCard';
 import Chart from './components/Chart';
 
-const METRICS: Metric[] = [
-  { key: 'wind_voltage_v', label: '風機電壓', unit: 'V', color: '#8884d8' },
-  { key: 'current_a', label: '風機電流', unit: 'A', color: '#82ca9d' },
-  { key: 'solar_voltage_v', label: '太陽能電壓', unit: 'V', color: '#ffc658' },
-  { key: 'temp_c', label: '溫度', unit: '°C', color: '#8dd1e1' },
-  { key: 'pressure_hpa', label: '氣壓', unit: 'hPa', color: '#ff7c7c' },
+const METRICS: (Metric & { icon: string })[] = [
+  { key: 'wind_voltage_v', label: '風機電壓', unit: 'V', color: '#8884d8', icon: '🌬️' },
+  { key: 'current_a', label: '風機電流', unit: 'A', color: '#82ca9d', icon: '🔌' },
+  { key: 'solar_voltage_v', label: '太陽能電壓', unit: 'V', color: '#ffc658', icon: '☀️' },
+  { key: 'temp_c', label: '溫度', unit: '°C', color: '#8dd1e1', icon: '🌡️' },
+  { key: 'pressure_hpa', label: '氣壓', unit: 'hPa', color: '#ff7c7c', icon: '🔵' },
+  { key: 'humidity_pct', label: '濕度', unit: '%', color: '#a8d8ea', icon: '💧' },
+  { key: 'wind_mps', label: '風速', unit: 'm/s', color: '#b8e0ff', icon: '💨' },
 ];
 
 const TIME_RANGES: { value: TimeRange; label: string; ms: number }[] = [
@@ -279,96 +281,94 @@ function App() {
   return (
     <div className="app">
       <div className="header">
-        <h1>⚡ 功率監控系統</h1>
-        <p>即時風力發電機功率與性能分析</p>
-        {lastUpdate && (
-          <p className="last-update">最後更新：{lastUpdate.toLocaleTimeString()}</p>
-        )}
+        <div className="header-main">
+          <h1>⚡ 功率監控系統</h1>
+          <p>即時風力發電機功率與性能分析</p>
+        </div>
+        <div className="header-meta">
+          <div className={`status-indicator ${isOffline ? 'offline' : 'online'}`}>
+            <span className={`status-dot ${isOffline ? 'offline' : 'online'}`}></span>
+            {isOffline ? '離線' : '在線'}
+          </div>
+          {lastUpdate && (
+            <p className="last-update">最後更新：{lastUpdate.toLocaleTimeString('zh-TW')}</p>
+          )}
+        </div>
       </div>
 
       {error && (
         <div className="error-banner">
           <span>{error}</span>
-          <button className="close-btn" onClick={() => setError(null)}>
-            ×
-          </button>
+          <button className="close-btn" onClick={() => setError(null)}>×</button>
         </div>
       )}
 
-      <div className="controls">
-        <div className="control-group">
+      {/* 即時數據 */}
+      <div className="section">
+        <div className="section-header">
+          <h2 className="section-title">📡 即時數據</h2>
           <div className="control-item">
-            <label>裝置</label>
             <select value={selectedDevice} onChange={(e) => setSelectedDevice(e.target.value)}>
               {devices.length > 0 ? (
                 devices.map((device) => (
                   <option key={device.device_id} value={device.device_id}>
-                    {device.device_id}
+                    裝置：{device.device_id}
                   </option>
                 ))
               ) : (
                 selectedDevice && (
                   <option key={selectedDevice} value={selectedDevice}>
-                    {selectedDevice}
+                    裝置：{selectedDevice}
                   </option>
                 )
               )}
             </select>
           </div>
+        </div>
 
-          <div className="control-item">
-            <label>狀態</label>
-            <div className={`status-indicator ${isOffline ? 'offline' : 'online'}`}>
-              <span className={`status-dot ${isOffline ? 'offline' : 'online'}`}></span>
-              {isOffline ? '離線' : '在線'}
-            </div>
-          </div>
-
-          <div className="control-item">
-            <label>時間範圍</label>
-            <div className="time-range-buttons">
-              {TIME_RANGES.map((range) => (
-                <button
-                  key={range.value}
-                  className={timeRange === range.value ? 'active' : ''}
-                  onClick={() => setTimeRange(range.value)}
-                >
-                  {range.label}
-                </button>
-              ))}
-            </div>
-          </div>
+        <div className="metrics-grid">
+          <PowerCard
+            power={getValue('power_w')}
+            voltage={getValue('wind_voltage_v') ?? getValue('voltage_v')}
+            current={getValue('current_a')}
+          />
+          {METRICS.map((metric) => (
+            <MetricCard
+              key={metric.key}
+              label={metric.label}
+              value={getValue(metric.key)}
+              unit={metric.unit}
+              icon={metric.icon}
+            />
+          ))}
         </div>
       </div>
 
-      <div className="metrics-grid">
-        <PowerCard
-          power={getValue('power_w')}
-          voltage={getValue('wind_voltage_v') ?? getValue('voltage_v')}
-          current={getValue('current_a')}
-        />
-        {METRICS.map((metric) => (
-          <MetricCard
-            key={metric.key}
-            label={metric.label}
-            value={getValue(metric.key)}
-            unit={metric.unit}
-          />
-        ))}
-      </div>
-
-      <div className="charts-section">
-        <h2>歷史數據</h2>
+      {/* 歷史數據 */}
+      <div className="section">
+        <div className="section-header">
+          <h2 className="section-title">📈 歷史數據</h2>
+          <div className="time-range-buttons">
+            {TIME_RANGES.map((range) => (
+              <button
+                key={range.value}
+                className={timeRange === range.value ? 'active' : ''}
+                onClick={() => setTimeRange(range.value)}
+              >
+                {range.label}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {historyData.length === 0 ? (
-          <p style={{ textAlign: 'center', color: '#666', padding: '40px' }}>
-            所選時間範圍內無歷史數據。
-          </p>
+          <p className="no-data">尚無歷史數據</p>
         ) : (
-          <>
+          <div className="charts-grid">
             <Chart
-              title="風機與太陽能電壓"
+              title="🌬️ 風機與太陽能電壓"
               data={historyData}
+              timeRange={timeRange}
               metrics={[
                 { key: 'wind_voltage_v', label: '風機電壓 (V)', color: '#8884d8' },
                 { key: 'solar_voltage_v', label: '太陽能電壓 (V)', color: '#ffc658' },
@@ -376,8 +376,9 @@ function App() {
             />
 
             <Chart
-              title="風機電流與功率"
+              title="🔌 風機電流與功率"
               data={historyData}
+              timeRange={timeRange}
               metrics={[
                 { key: 'current_a', label: '風機電流 (A)', color: '#82ca9d' },
                 { key: 'power_w', label: '功率 (W)', color: '#ff7c7c' },
@@ -385,14 +386,25 @@ function App() {
             />
 
             <Chart
-              title="環境指標"
+              title="🌡️ 溫度與氣壓"
               data={historyData}
+              timeRange={timeRange}
               metrics={[
                 { key: 'temp_c', label: '溫度 (°C)', color: '#8dd1e1' },
                 { key: 'pressure_hpa', label: '氣壓 (hPa)', color: '#ff7c7c' },
               ]}
             />
-          </>
+
+            <Chart
+              title="💧 濕度與風速"
+              data={historyData}
+              timeRange={timeRange}
+              metrics={[
+                { key: 'humidity_pct', label: '濕度 (%)', color: '#a8d8ea' },
+                { key: 'wind_mps', label: '風速 (m/s)', color: '#b8e0ff' },
+              ]}
+            />
+          </div>
         )}
       </div>
     </div>

@@ -23,14 +23,17 @@ function PowerCard({ power, voltage, current }: PowerCardProps) {
 
   return (
     <div className={`metric-card power-card ${status}`}>
-      <div className="metric-label">⚡ 功率輸出</div>
+      <div className="metric-label">
+        <span className="metric-icon">⚡</span>
+        功率輸出
+      </div>
       <div className="metric-value">
         <span>{displayValue}</span>
         <span className="metric-unit">W</span>
       </div>
       {power !== null && voltage !== null && current !== null && (
         <div className="power-formula">
-          P = V × I = {formatValue(voltage)} × {formatValue(current)}
+          P = {formatValue(voltage)} V × {formatValue(current)} A
         </div>
       )}
     </div>
