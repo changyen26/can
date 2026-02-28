@@ -19,21 +19,6 @@ const TIME_RANGES: { value: TimeRange; label: string; ms: number }[] = [
   { value: '24h', label: '24 小時', ms: 24 * 60 * 60 * 1000 },
 ];
 
-const CURL_COMMAND = `curl -X POST "http://localhost:5000/api/v1/ingest" \\
-  -H "Content-Type: application/json" \\
-  -H "x-api-key: dev-secret-key" \\
-  -d '{
-    "device_id": "esp32-001",
-    "ts": ${Date.now()},
-    "voltage_v": 12.34,
-    "current_a": 1.23,
-    "rpm": 3450,
-    "pressure_hpa": 1013.25,
-    "temp_c": 25.6,
-    "humidity_pct": 55.2,
-    "wind_mps": 3.4
-  }'`;
-
 function App() {
   const [devices, setDevices] = useState<Device[]>([]);
   const [selectedDevice, setSelectedDevice] = useState<string>('');
@@ -42,7 +27,6 @@ function App() {
   const [timeRange, setTimeRange] = useState<TimeRange>('1h');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [simulating, setSimulating] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
 
   const eventSourceRef = useRef<EventSource | null>(null);
@@ -271,35 +255,6 @@ function App() {
     };
   }, [selectedDevice, connectSSE]);
 
-  // Handle simulate data
-  const handleSimulate = async () => {
-    setSimulating(true);
-    try {
-      await api.simulateData('esp32-001', 20);
-      setError(null);
-      // Reload data after simulation
-      await loadDevices();
-      setTimeout(() => {
-        loadLatestData();
-        loadHistory();
-      }, 500);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '無法模擬數據');
-    } finally {
-      setSimulating(false);
-    }
-  };
-
-  // Handle copy curl
-  const handleCopyCurl = async () => {
-    try {
-      await navigator.clipboard.writeText(CURL_COMMAND);
-      alert('curl 指令已複製到剪貼簿！');
-    } catch (err) {
-      alert('複製失敗，請手動複製。');
-    }
-  };
-
   if (loading) {
     return (
       <div className="app">
@@ -308,50 +263,6 @@ function App() {
           <p>即時風力發電機功率與性能分析</p>
         </div>
         <div className="loading">⏳ 系統初始化中...</div>
-      </div>
-    );
-  }
-
-  // 只有在沒有設備且沒有任何數據時才顯示空狀態
-  // 如果有歷史數據或最新數據，即使沒有在線設備也應該顯示
-  if (devices.length === 0 && !latestData && historyData.length === 0) {
-    return (
-      <div className="app">
-        <div className="header">
-          <h1>⚡ 功率監控系統</h1>
-          <p>即時風力發電機功率與性能分析</p>
-        </div>
-
-        {error && (
-          <div className="error-banner">
-            <span>{error}</span>
-            <button className="close-btn" onClick={() => setError(null)}>
-              ×
-            </button>
-          </div>
-        )}
-
-        <div className="empty-state">
-          <h2>⚠ 無在線裝置</h2>
-          <p>未偵測到風力發電機數據。請發送數據或執行模擬以初始化系統。</p>
-
-          <div className="empty-state-actions">
-            <button className="btn btn-primary" onClick={handleSimulate} disabled={simulating}>
-              {simulating ? '模擬中...' : '模擬數據'}
-            </button>
-            <button className="btn btn-secondary" onClick={handleCopyCurl}>
-              複製 curl 指令
-            </button>
-          </div>
-
-          <div className="code-block">
-            <code>{CURL_COMMAND}</code>
-          </div>
-
-          <p style={{ marginTop: '20px', color: '#666', fontSize: '0.9rem' }}>
-            發送數據後，儀表板將自動重新整理。
-          </p>
-        </div>
       </div>
     );
   }
